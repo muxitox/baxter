@@ -148,7 +148,7 @@ def read_trajectory_points(input_file, fix_orientation):
         cartesian_reader = csv.reader(csvfile, delimiter=' ')
         points_list = list()
         for row in cartesian_reader:
-            point = [float(i.replace(',','.')) for i in row]
+            point = [float(i) for i in row]
             point = point[0:3]
 
             if fix_orientation:
