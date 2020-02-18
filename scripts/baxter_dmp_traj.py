@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import roslib; 
+import roslib;
 roslib.load_manifest('dmp')
 import rospy 
 import numpy as np
@@ -7,8 +7,11 @@ from dmp.srv import *
 from dmp.msg import *
 import csv
 import argparse
-import baxter_interface
+import actionlib
+import sys
+from copy import copy
 
+import baxter_interface
 
 from sensor_msgs.msg import JointState
 
@@ -26,6 +29,14 @@ from std_msgs.msg import (
 from baxter_core_msgs.srv import (
     SolvePositionIK,
     SolvePositionIKRequest,
+)
+
+from control_msgs.msg import (
+    FollowJointTrajectoryAction,
+    FollowJointTrajectoryGoal,
+)
+from trajectory_msgs.msg import (
+    JointTrajectoryPoint,
 )
 
 
@@ -90,11 +101,10 @@ class IKSolver:
 
             if first_iter:
                 # Make initial query just to know the joint names
-                angles_dict = self.ik_request(pose)
-                joint_names = angles_dict.keys()
-                seed.name = joint_names
+                _angles_dict = self.ik_request(pose)
+                _joint_names = _angles_dict.keys()
+                seed.name = _joint_names
 
-                # TODO: INTRODUCE AN INITIAL SEED TO CHANGE THE FORM OF THE MOVEMENT
                 if _use_initial_seed:
                     # ['right_s0', 'right_s1', 'right_w0', 'right_w1', 'right_w2', 'right_e0', 'right_e1']
                     seed_0 = [0.07999999960926552, -0.9999845805105894, -0.669996713128465, 1.030008743719245,
@@ -102,22 +112,22 @@ class IKSolver:
 
                     seed.position = seed_0
                     seed.header = Header(stamp=rospy.Time.now(), frame_id='base')
-                    angles_dict = self.ik_request(pose, seed)
+                    _angles_dict = self.ik_request(pose, seed)
 
                 else:
-                    angles_dict = self.ik_request(pose)
+                    _angles_dict = self.ik_request(pose)
 
                 first_iter = False
 
             else:
                 seed.position = traj_k
                 seed.header = Header(stamp=rospy.Time.now(), frame_id='base')
-                angles_dict = self.ik_request(pose, seed)
+                _angles_dict = self.ik_request(pose, seed)
 
-            traj_k = angles_dict.values()
+            traj_k = _angles_dict.values()
             traj.append(traj_k)
 
-        return traj
+        return traj, _joint_names
 
 # My class for doing de DMPs
 class DynamicMovementPrimitives:
@@ -190,6 +200,53 @@ class DynamicMovementPrimitives:
         return resp
 
 
+# Trajectory client object
+class Trajectory(object):
+    def __init__(self, _limb, _joint_names):
+        ns = 'robot/limb/' + _limb + '/'
+        self._client = actionlib.SimpleActionClient(
+            ns + "follow_joint_trajectory",
+            FollowJointTrajectoryAction,
+        )
+        self._goal = FollowJointTrajectoryGoal()
+        self._goal_time_tolerance = rospy.Time(0.1)
+        self._goal.goal_time_tolerance = self._goal_time_tolerance
+        server_up = self._client.wait_for_server(timeout=rospy.Duration(10.0))
+        if not server_up:
+            rospy.logerr("Timed out waiting for Joint Trajectory"
+                         " Action Server to connect. Start the action server"
+                         " before running example.")
+            rospy.signal_shutdown("Timed out waiting for Action Server")
+            sys.exit(1)
+        self.clear(_joint_names)
+
+    def add_point(self, positions, time=None):
+        _point = JointTrajectoryPoint()
+        _point.positions = copy(positions)
+        # point.time_from_start = rospy.Duration(time)
+        self._goal.trajectory.points.append(_point)
+
+    def start(self):
+        self._goal.trajectory.header.stamp = rospy.Time.now()
+        self._client.send_goal(self._goal)
+
+    def stop(self):
+        self._client.cancel_goal()
+
+    def wait(self, timeout=15.0):
+        self._client.wait_for_result(timeout=rospy.Duration(timeout))
+
+    def result(self):
+        return self._client.get_result()
+
+    def clear(self, _joint_names):
+        self._goal = FollowJointTrajectoryGoal()
+        self._goal.goal_time_tolerance = self._goal_time_tolerance
+        # self._goal.trajectory.joint_names = [limb + '_' + joint for joint in \
+        #                                     ['s0', 's1', 'e0', 'e1', 'w0', 'w1', 'w2']]
+        self._goal.trajectory.joint_names = _joint_names
+
+
 # Read the cartesian points from csv file
 def read_trajectory_points(_input_file, _fix_orientation):
     print('')
@@ -197,19 +254,16 @@ def read_trajectory_points(_input_file, _fix_orientation):
     # fixed_orientation = [x, y, z, w]
     _fixed_orientation = [-0.0249590815779, 0.999649402929, 0.00737916180073, 0.00486450832011]
     with open(_input_file) as csvfile:
-        _cartesian_reader = csv.reader(csvfile, delimiter=' ')
+        _cartesian_reader = csv.reader(csvfile, delimiter=',')
         _points_list = list()
         for row in _cartesian_reader:
             _point = [float(i) for i in row]
-            _point = _point[0:3]
 
             if _fix_orientation:
+                _point = _point[0:3]
                 _point.extend(_fixed_orientation)
-            else:
-                # TODO:  Make calculations to calculate orientation
-                print('TODO:')
-                _point.extend(_fixed_orientation)
-            _points_list.append(point)
+
+            _points_list.append(_point)
 
     return _points_list
 
@@ -226,7 +280,7 @@ if __name__ == '__main__':
     # Select angles or cartesian points
     arg_group = parser.add_mutually_exclusive_group(required=True)
     arg_group.add_argument("-a", "--angles", dest="angles",
-        action='store_true', default=False, help="set if trainin with angles (pre-conversion)")
+        action='store_true', default=False, help="set if training with angles (pre-conversion)")
     arg_group.add_argument("-c", "--cartesian", dest="cartesian",
         action='store_true', default=False, help="set if training with cartesian points (post-conversion)")
 
@@ -277,13 +331,13 @@ if __name__ == '__main__':
 
     # Start inverse kinematics system
     side = "right"
-    kin = IKSolver(side)
+    kin = IKSolver(side, False)
 
     # Make previous conversion to angles if requested:
     if angles:
         print('Converting to angles before DMP...')
         use_initial_seed = True
-        traj = kin.cartesian_to_joints(traj, use_initial_seed)
+        traj, joint_names = kin.cartesian_to_joints(traj, use_initial_seed)
 
     # Train the DMPs
     resp = DMPs.fit(traj)
@@ -315,6 +369,9 @@ if __name__ == '__main__':
         goal_dict = kin.ik_request(goal_pose)
         goal = goal_dict.values()
 
+        # Threshold in each dimension
+        goal_thresh = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
+
     else:
         print('Using cartesian points for DMP...')
         x_0_position.extend(x_0_orientation)
@@ -323,9 +380,8 @@ if __name__ == '__main__':
         goal_position.extend(goal_orientation)
         goal = goal_position
 
-    # Threshold in each dimension, the threshold is the same as both cases have the same number of dimensions
-    # And we are not very restrictive
-    goal_thresh = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
+        # Threshold in each dimension
+        goal_thresh = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
 
     seg_length = -1          # Plan until convergence to goal
     # tau = 2 * resp.tau      # Desired plan should take twice as long as demo
@@ -342,22 +398,60 @@ if __name__ == '__main__':
 
     # If the plan has been learnt in cartesian, then convert to angles
     if not angles:
-        plan_list = kin.cartesian_to_joints(plan_list)
+        plan_list, joint_names = kin.cartesian_to_joints(plan_list)
 
+    '''
     ##
     # Move the robot according to the plan
     ##
     limb = baxter_interface.Limb(side)
-    # gripper = baxter_interface.Gripper(side)
-    # joint_names = ['right_s0', 'right_s1', 'right_e0', 'right_e1', 'right_w0', 'right_w1', 'right_w2']
+    rate = rospy.Rate(100)
 
     for position in plan_list:
         angles_dict = dict(zip(joint_names, position))
         limb.move_to_joint_positions(angles_dict)
 
+        rate.sleep()
+
+    # gripper = baxter_interface.Gripper(side)
+    # joint_names = ['right_s0', 'right_s1', 'right_w0', 'right_w1', 'right_w2', 'right_e0', 'right_e1']
+
+    # Move arm to the initial position of the trajectory
+    # first_position = plan_list[0]
+    # angles_dict = dict(zip(joint_names, first_position))
+    # limb.move_to_joint_positions(angles_dict)
+
+    # time = 0
+
+    # traj = Trajectory(side, joint_names)
+    # rospy.on_shutdown(traj.stop)
+    # for position in plan_list:
+    #    traj.add_point(position, time)
+    #    time += 1
+
+    # traj.start()
+    # traj.wait(20)
+    # print('Test completed')
+    
+    '''
+
     # TODO: Save plan if requested
-    '''
-    # Save the plan if requested
-    if args.output_file is not None:
-        print('Saving plan...')
-    '''
+
+    header_list = ['time']
+    header_list.extend(joint_names)
+    header = ','.join(header_list)
+
+    f = open(args.output_file, 'w')
+    f.write(header+'\n')
+
+    timestamp = 0
+    time_increment = 0.5
+    for point in plan_list:
+        line = [timestamp]
+        line.extend(point)
+        line = ','.join(map(str, line))
+        f.write(line+'\n')
+        timestamp += 0.5
+    f.close()
+
+
