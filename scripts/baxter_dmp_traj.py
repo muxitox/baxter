@@ -50,14 +50,29 @@ class IKSolver:
         ns = "ExternalTools/" + _limb + "/PositionKinematicsNode/IKService"
         self._iksvc = rospy.ServiceProxy(ns, SolvePositionIK)
         rospy.wait_for_service(ns, 5.0)
+        self.seed_list = [[0.09357282806101024, 1.6662866308405306, 0.6224127046845066, -1.1846166634445108,
+                           -0.13614079492483047, -0.438335010138257, 0.11888351106111957],
+                          [0.3390097541226764, 1.4733885467639398, 0.16988837225830958, -1.3598739684604193,
+                           -1.3675438723998463, -0.2703641138648042, 1.2440584189750705],
+                          [0.2592427531526349, 1.3123205640359714, 0.3796602450016399, -1.2950632801722606,
+                           -1.6988837225830957, -0.17487380981893716, 1.6072283705069423]]
+        self.joint_names = ['right_e0', 'right_e1', 'right_s0', 'right_s1', 'right_w0', 'right_w1', 'right_w2']
 
-    def ik_request(self, pose, seed=None):
+
+    def ik_request(self, pose, seed_list=None, _joint_names=None):
         hdr = Header(stamp=rospy.Time.now(), frame_id='base')
         ikreq = SolvePositionIKRequest()
         ikreq.pose_stamp.append(PoseStamped(header=hdr, pose=pose))
 
-        if seed is not None:
-            ikreq.seed_angles.append(seed)
+        if seed_list is not None:
+            for seed_angles in seed_list:
+
+                seed = JointState()
+                seed.name = _joint_names
+                seed.position = seed_angles
+                seed.header = Header(stamp=rospy.Time.now(), frame_id='base')
+
+                ikreq.seed_angles.append(seed)
 
         try:
             resp = self._iksvc(ikreq)
@@ -88,46 +103,64 @@ class IKSolver:
         return limb_joints
 
     # Process the trajectory to feed it to the DMPs
-    def cartesian_to_joints(self, _points, _use_initial_seed=False):
-        traj = []
+    def cartesian_list_to_joints(self, _points, _use_initial_seed=False):
+        _traj = []
         first_iter = True
-        seed = JointState()
 
         # Call the IK Solver for all points
-        for point in _points:
+        for _point in _points:
 
-            pose = Pose(position=Point(x=point[0], y=point[1],z=point[2]),
-                        orientation=Quaternion(x=point[3], y=point[4], z=point[5], w=point[6]))
+            pose = Pose(position=Point(x=_point[0], y=_point[1],z=_point[2]),
+                        orientation=Quaternion(x=_point[3], y=_point[4], z=_point[5], w=_point[6]))
 
             if first_iter:
-                # Make initial query just to know the joint names
-                _angles_dict = self.ik_request(pose)
-                _joint_names = _angles_dict.keys()
-                seed.name = _joint_names
-
                 if _use_initial_seed:
-                    # ['right_s0', 'right_s1', 'right_w0', 'right_w1', 'right_w2', 'right_e0', 'right_e1']
-                    seed_0 = [0.07999999960926552, -0.9999845805105894, -0.669996713128465, 1.030008743719245,
-                              0.4999996890795071, 1.1899720112608447, 1.9400294781400014]
-
-                    seed.position = seed_0
-                    seed.header = Header(stamp=rospy.Time.now(), frame_id='base')
-                    _angles_dict = self.ik_request(pose, seed)
+                    _angles_dict = self.ik_request(pose, self.seed_list, self.joint_names)
 
                 else:
                     _angles_dict = self.ik_request(pose)
 
                 first_iter = False
+                self.initial_angles = _angles_dict.values()
 
             else:
-                seed.position = traj_k
-                seed.header = Header(stamp=rospy.Time.now(), frame_id='base')
-                _angles_dict = self.ik_request(pose, seed)
+                _angles_dict = self.ik_request(pose, [traj_k], _joint_names)
 
             traj_k = _angles_dict.values()
-            traj.append(traj_k)
+            _joint_names = _angles_dict.keys()
+            _traj.append(traj_k)
 
-        return traj, _joint_names
+            print(_joint_names)
+            print(traj_k)
+
+        self.final_angles = traj_k
+        self.final_joint_names = _joint_names
+        return _traj, _joint_names
+
+    '''
+    Process one cartesian position and convert it to axial
+    
+    mode 0 -> Use initial manual seed
+    mode 1 -> Use initial angles
+    mode 2 -> Use final angles
+    otherwise -> Don't use any seed
+    '''
+    def cartesian_to_joints(self, pose, mode=None):
+
+        if mode == 0:
+            _angles_dict = self.ik_request(pose, self.seed_list, self.joint_names)
+        elif mode == 1:
+            _angles_dict = self.ik_request(pose, [self.initial_angles], self.final_joint_names)
+        elif mode == 2:
+            _angles_dict = self.ik_request(pose, [self.final_angles], self.final_joint_names)
+        else:
+            _angles_dict = self.ik_request(pose)
+
+        _joint_names = _angles_dict.keys()
+        axial_point = _angles_dict.values()
+
+        return axial_point, _joint_names
+
 
 # My class for doing de DMPs
 class DynamicMovementPrimitives:
@@ -169,10 +202,9 @@ class DynamicMovementPrimitives:
             resp = lfd(demotraj, k_gains, d_gains, num_bases)
         except rospy.ServiceException, e:
             print "Service call failed: %s"%e
-        print "LfD done"    
+        print "LfD trained"
                 
         return resp
-
 
     # Set a DMP as active for planning
     def makeSetActiveRequest(self, dmp_list):
@@ -337,7 +369,7 @@ if __name__ == '__main__':
     if angles:
         print('Converting to angles before DMP...')
         use_initial_seed = True
-        traj, joint_names = kin.cartesian_to_joints(traj, use_initial_seed)
+        traj, joint_names = kin.cartesian_list_to_joints(traj, use_initial_seed)
 
     # Train the DMPs
     resp = DMPs.fit(traj)
@@ -345,14 +377,14 @@ if __name__ == '__main__':
     # Make the query with the new initial position and goal
 
     # Set initial position
-    x_0_position = [0.1442207, -0.4007651, 0.2935641]
-    x_0_orientation = [-0.0249590815779, 0.999649402929, 0.00737916180073, 0.00486450832011]
+    x_0_position = [1.057178,-0.372620,0.455700]
+    x_0_orientation = [0.174272,0.645359,0.055630,0.741651]
     x_dot_0 = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     t_0 = 0
 
     # Set goal
-    goal_position = [0.2755853, 0.1018015, 0.2359535]
-    goal_orientation = [-0.0249590815779, 0.999649402929, 0.00737916180073, 0.00486450832011]
+    goal_position = [0.977863,-0.263617,0.314258]
+    goal_orientation = [0.486297,0.665848,0.046493,0.563915]
 
     if angles:
 
@@ -360,14 +392,15 @@ if __name__ == '__main__':
         x_0_pose = Pose(position=Point(x=x_0_position[0], y=x_0_position[1], z=x_0_position[2]),
                         orientation=Quaternion(x=x_0_orientation[0], y=x_0_orientation[1], z=x_0_orientation[2],
                                                w=x_0_orientation[3]))
-        x_0_dict = kin.ik_request(x_0_pose)
-        x_0 = x_0_dict.values()
+        x_0 = kin.cartesian_to_joints(x_0_pose, 1)
+        x_0 = traj[0]
 
         goal_pose = Pose(position=Point(x=goal_position[0], y=goal_position[1], z=goal_position[2]),
                          orientation=Quaternion(x=goal_orientation[0], y=goal_orientation[1], z=goal_orientation[2],
                                                 w=x_0_orientation[3]))
-        goal_dict = kin.ik_request(goal_pose)
-        goal = goal_dict.values()
+
+        goal = kin.cartesian_to_joints(goal_pose, 2)
+        goal = traj[-1]
 
         # Threshold in each dimension
         goal_thresh = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
@@ -385,7 +418,7 @@ if __name__ == '__main__':
 
     seg_length = -1          # Plan until convergence to goal
     # tau = 2 * resp.tau      # Desired plan should take twice as long as demo
-    tau = 2 * resp.tau       # Desired plan should take twice as long as demo
+    tau = resp.tau       # Desired plan should take twice as long as demo
     dt = 1.0
     integrate_iter = 5       # dt is rather large, so this is > 1
     plan = DMPs.predict(x_0, x_dot_0, t_0, goal, goal_thresh, seg_length, tau, dt, integrate_iter)
@@ -398,9 +431,8 @@ if __name__ == '__main__':
 
     # If the plan has been learnt in cartesian, then convert to angles
     if not angles:
-        plan_list, joint_names = kin.cartesian_to_joints(plan_list)
+        plan_list, joint_names = kin.cartesian_list_to_joints(plan_list)
 
-    '''
     ##
     # Move the robot according to the plan
     ##
@@ -412,6 +444,8 @@ if __name__ == '__main__':
         limb.move_to_joint_positions(angles_dict)
 
         rate.sleep()
+
+    '''
 
     # gripper = baxter_interface.Gripper(side)
     # joint_names = ['right_s0', 'right_s1', 'right_w0', 'right_w1', 'right_w2', 'right_e0', 'right_e1']
