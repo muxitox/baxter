@@ -9,8 +9,8 @@ def main():
     
     first_iter = True
 
-    input_file = 'Pre/23-02-2020-18-2-30-NEW_MANOALTA.csv'
-    output_file = 'Post/NEWMANOALTA.csv'
+    input_file = 'Pre/23-02-2020-18-2-30-NEW_MANOALTA_BUENO.csv'
+    output_file = 'Post/NEWMANOALTA_CHANGEORDER.csv'
 
 
     # Period to create groups of vectors to process the records
@@ -86,7 +86,7 @@ def main():
         a = np.divide(wh_vector, wh_norm)
 
         # Normal vector between a and wt
-        n_aux_vector = np.cross(wt_vector, a)
+        n_aux_vector = np.cross(a, wt_vector)
         n_aux_norm = np.linalg.norm(n_aux_vector)
         n = np.divide(n_aux_vector, n_aux_norm)
         # Make sure it is a unitary vector
