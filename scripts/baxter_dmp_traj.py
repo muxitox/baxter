@@ -130,9 +130,6 @@ class IKSolver:
             _joint_names = _angles_dict.keys()
             _traj.append(traj_k)
 
-            print(_joint_names)
-            print(traj_k)
-
         self.final_angles = traj_k
         self.final_joint_names = _joint_names
         return _traj, _joint_names
@@ -354,7 +351,7 @@ if __name__ == '__main__':
 
     # Create DMP class with initial parameters
     dims = 7                # Number of dimensions
-    dt = 1.0                # Time resolution of the plan
+    dt = 0.5                # Time resolution of the plan
     K = 100                 # List of proportional gains
     D = 2.0 * np.sqrt(K)    # D_gains
     num_bases = 200           # Number of basis functions to use
@@ -377,14 +374,16 @@ if __name__ == '__main__':
     # Make the query with the new initial position and goal
 
     # Set initial position
-    x_0_position = [1.057178,-0.372620,0.455700]
-    x_0_orientation = [0.174272,0.645359,0.055630,0.741651]
+    x_0_position = [1.057178, -0.372620, 0.455700]
+    x_0_orientation = [0.174272, 0.645359, 0.055630, 0.741651]
     x_dot_0 = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     t_0 = 0
 
     # Set goal
-    goal_position = [0.977863,-0.263617,0.314258]
-    goal_orientation = [0.486297,0.665848,0.046493,0.563915]
+    goal_position = [0.977863, -0.263617, 0.314258]
+    goal_orientation = [0.486297, 0.665848, 0.046493, 0.563915]
+
+    print traj
 
     if angles:
 
@@ -392,18 +391,18 @@ if __name__ == '__main__':
         x_0_pose = Pose(position=Point(x=x_0_position[0], y=x_0_position[1], z=x_0_position[2]),
                         orientation=Quaternion(x=x_0_orientation[0], y=x_0_orientation[1], z=x_0_orientation[2],
                                                w=x_0_orientation[3]))
-        x_0 = kin.cartesian_to_joints(x_0_pose, 1)
+        x_0, _ = kin.cartesian_to_joints(x_0_pose, 1)
         x_0 = traj[0]
 
         goal_pose = Pose(position=Point(x=goal_position[0], y=goal_position[1], z=goal_position[2]),
                          orientation=Quaternion(x=goal_orientation[0], y=goal_orientation[1], z=goal_orientation[2],
                                                 w=x_0_orientation[3]))
 
-        goal = kin.cartesian_to_joints(goal_pose, 2)
+        goal, _ = kin.cartesian_to_joints(goal_pose, 2)
         goal = traj[-1]
 
         # Threshold in each dimension
-        goal_thresh = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
+        goal_thresh = [0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4]
 
     else:
         print('Using cartesian points for DMP...')
@@ -414,12 +413,12 @@ if __name__ == '__main__':
         goal = goal_position
 
         # Threshold in each dimension
-        goal_thresh = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
+        goal_thresh = [0.03, 0.03, 0.03, 0.03, 0.03, 0.03, 0.03]
 
     seg_length = -1          # Plan until convergence to goal
     # tau = 2 * resp.tau      # Desired plan should take twice as long as demo
     tau = resp.tau       # Desired plan should take twice as long as demo
-    dt = 1.0
+    dt = 0.5
     integrate_iter = 5       # dt is rather large, so this is > 1
     plan = DMPs.predict(x_0, x_dot_0, t_0, goal, goal_thresh, seg_length, tau, dt, integrate_iter)
 
@@ -431,8 +430,9 @@ if __name__ == '__main__':
 
     # If the plan has been learnt in cartesian, then convert to angles
     if not angles:
-        plan_list, joint_names = kin.cartesian_list_to_joints(plan_list)
+        plan_list, joint_names = kin.cartesian_list_to_joints(plan_list, True)
 
+    '''
     ##
     # Move the robot according to the plan
     ##
@@ -447,30 +447,9 @@ if __name__ == '__main__':
 
     '''
 
-    # gripper = baxter_interface.Gripper(side)
-    # joint_names = ['right_s0', 'right_s1', 'right_w0', 'right_w1', 'right_w2', 'right_e0', 'right_e1']
+    print('Writing to file... ', args.output_file)
 
-    # Move arm to the initial position of the trajectory
-    # first_position = plan_list[0]
-    # angles_dict = dict(zip(joint_names, first_position))
-    # limb.move_to_joint_positions(angles_dict)
-
-    # time = 0
-
-    # traj = Trajectory(side, joint_names)
-    # rospy.on_shutdown(traj.stop)
-    # for position in plan_list:
-    #    traj.add_point(position, time)
-    #    time += 1
-
-    # traj.start()
-    # traj.wait(20)
-    # print('Test completed')
-    
-    '''
-
-    # TODO: Save plan if requested
-
+    # Save plan if requested
     header_list = ['time']
     header_list.extend(joint_names)
     header = ','.join(header_list)
@@ -478,14 +457,12 @@ if __name__ == '__main__':
     f = open(args.output_file, 'w')
     f.write(header+'\n')
 
-    timestamp = 0
-    time_increment = 0.5
-    for point in plan_list:
-        line = [timestamp]
+    for (point, timestamp) in zip(plan_list, plan.plan.times):
+        line = [timestamp-dt]
         line.extend(point)
         line = ','.join(map(str, line))
         f.write(line+'\n')
-        timestamp += 0.5
+
     f.close()
 
 
