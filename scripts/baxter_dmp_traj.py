@@ -162,7 +162,7 @@ class IKSolver:
 # My class for doing de DMPs
 class DynamicMovementPrimitives:
 
-    def __init__(self, _dims, _dt, _K_gain, _D_gain, _num_bases):
+    def __init__(self, _dims, _dt, _K_gain, _D_gain, _num_bases,hi):
         self.dims = _dims
         self.dt = _dt
         self.K_gain = _K_gain
@@ -180,7 +180,7 @@ class DynamicMovementPrimitives:
         return self.resp
 
     # Learn a DMP from demonstration data
-    def makeLFDRequest(self, dims, traj, dt, K_gain, D_gain, num_bases):
+    def makeLFDRequest(self, dims, traj, dt, K_gain, D_gain, num_bases, hi):
         demotraj = DMPTraj()
             
         for i in range(len(traj)):
@@ -196,7 +196,7 @@ class DynamicMovementPrimitives:
         rospy.wait_for_service('learn_dmp_from_demo')
         try:
             lfd = rospy.ServiceProxy('learn_dmp_from_demo', LearnDMPFromDemo)
-            resp = lfd(demotraj, k_gains, d_gains, num_bases)
+            resp = lfd(demotraj, k_gains, d_gains, num_bases, hi)
         except rospy.ServiceException, e:
             print "Service call failed: %s"%e
         print "LfD trained"
@@ -354,7 +354,7 @@ if __name__ == '__main__':
     dt = 0.5                # Time resolution of the plan
     K = 100                 # List of proportional gains
     D = 2.0 * np.sqrt(K)    # D_gains
-    num_bases = 200           # Number of basis functions to use
+    num_bases = 100           # Number of basis functions to use
 
     DMPs = DynamicMovementPrimitives(dims, dt, K, D, num_bases)
 
@@ -367,6 +367,8 @@ if __name__ == '__main__':
         print('Converting to angles before DMP...')
         use_initial_seed = True
         traj, joint_names = kin.cartesian_list_to_joints(traj, use_initial_seed)
+
+    print traj
 
     # Train the DMPs
     resp = DMPs.fit(traj)
@@ -382,8 +384,6 @@ if __name__ == '__main__':
     # Set goal
     goal_position = [0.977863, -0.263617, 0.314258]
     goal_orientation = [0.486297, 0.665848, 0.046493, 0.563915]
-
-    print traj
 
     if angles:
 

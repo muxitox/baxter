@@ -58,6 +58,7 @@ void learnFromDemo(const DMPTraj &demo,
 				   const std::vector<double> &k_gains,
 				   const std::vector<double> &d_gains,
 				   const int &num_bases,
+				   const double &hi_local,
 				   std::vector<DMPData> &dmp_list);
 
 void generatePlan(const std::vector<DMPData> &dmp_list,

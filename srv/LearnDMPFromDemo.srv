@@ -8,6 +8,8 @@ float64[] d_gains
 # Set number of basis functions to use to approx the DMP forcing function
 int32 num_bases
 
+# Width
+float64 hi_local
 ---
 
 # Returns a DMP for each DOF, intended to be linked together with a single phase variable

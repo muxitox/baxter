@@ -6,7 +6,7 @@ std::vector<DMPData> active_dmp_list;
 bool lfdCallback(LearnDMPFromDemo::Request  &req,
 			     LearnDMPFromDemo::Response &res )
 {
-	learnFromDemo(req.demo, req.k_gains, req.d_gains, req.num_bases, res.dmp_list);
+	learnFromDemo(req.demo, req.k_gains, req.d_gains, req.num_bases, req.hi_local, res.dmp_list);
 	res.tau = req.demo.times[req.demo.times.size()-1];
 	return true;
 }

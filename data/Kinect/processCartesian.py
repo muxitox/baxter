@@ -110,7 +110,7 @@ def main():
         median_list.append(final_pose)
 
     output_array = np.array(median_list)
-    np.savetxt(output_file, output_array, fmt='%f', delimiter=",")
+    np.savetxt(output_file, output_array, fmt='%.12f', delimiter=",")
 
     print('#### Finished processing file in ', output_file, '...')
 
