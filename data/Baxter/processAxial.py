@@ -9,8 +9,8 @@ def main():
     
     first_iter = True
 
-    input_file = 'Pre/dmptraj1.csv'
-    output_file = 'Post/dmptraj1.csv'
+    input_file = 'Pre/tirarLiquido.csv'
+    output_file = 'Post/tirarLiquido.csv'
 
 
     # Period to create groups of vectors to process the records

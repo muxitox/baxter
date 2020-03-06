@@ -48,6 +48,7 @@ namespace dmp{
 
 double alpha = -log(0.01); //Ensures 99% phase convergence at t=tau
 double hi = 0.1;
+double alpha_global = 0;
 
 /**
  * @brief Calculate an exp-decaying 1 to 0 phase based on time and the time scaling constant tau
@@ -74,9 +75,11 @@ void learnFromDemo(const DMPTraj &demo,
 				   const vector<double> &d_gains,
 				   const int &num_bases,
 				   const double &hi_local,
+				   const double &alpha_local,
 				   vector<DMPData> &dmp_list)
 {
 	hi = hi_local;
+	alpha_global = alpha_local;
 	//Determine traj length and dim
 	int n_pts = demo.points.size();
 	if(n_pts < 1){
@@ -92,7 +95,7 @@ void learnFromDemo(const DMPTraj &demo,
 	double *f_domain = new double[n_pts];
 	double *f_targets = new double[n_pts];
 	FunctionApprox *f_approx = new LinearApprox();
-	//FunctionApprox *f_approx = new RadialApprox(num_bases, hi, alpha);
+	//FunctionApprox *f_approx = new RadialApprox(num_bases, hi, alpha_global);
 
 	//Compute the DMP weights for each DOF separately
 	for(int d=0; d<dims; d++){
@@ -190,7 +193,7 @@ void generatePlan(const vector<DMPData> &dmp_list,
 
 	for(int i=0; i<dims; i++)
 		f[i] = new LinearApprox(dmp_list[i].f_domain, dmp_list[i].f_targets);
-		//f[i] = new RadialApprox(dmp_list[i].weights, hi, alpha);
+		//f[i] = new RadialApprox(dmp_list[i].weights, hi, alpha_global);
 
 	
 	double t = 0;

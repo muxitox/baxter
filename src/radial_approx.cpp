@@ -56,8 +56,12 @@ RadialApprox::RadialApprox(int num_bases, double base_width, double alpha)
 	for(int i=0; i<n_bases; i++){
 		features[i] = 0;
 		centers[i] = exp((-alpha*i)/n_bases);
+		//widths[i] = base_width * (1/exp((-alpha*i)/n_bases));
 		widths[i] = base_width * (1/exp((-alpha*i)/n_bases));
+
+		cout << (centers[i]) << " " << widths[i] << endl;
 	}
+	cout << " end1" << endl;
 }
 
 
@@ -70,9 +74,15 @@ RadialApprox::RadialApprox(const vector<double> &w, double base_width, double al
 		widths = new double[n_bases];
 		for(int i=0; i<n_bases; i++){
 			features[i] = 0;
-			centers[i] = ((double)i)/((double)n_bases);  //exp((-alpha*i)/n_bases);
-			widths[i] = base_width; //base_width * exp((-alpha*i)/n_bases);
+			//centers[i] = ((double)i)/((double)n_bases);  //exp((-alpha*i)/n_bases);
+			centers[i] = exp((-alpha*i)/n_bases);
+			//widths[i] = base_width; //base_width * exp((-alpha*i)/n_bases);
+			widths[i] = base_width * exp(1/(-alpha*i)/n_bases);
+			cout << (centers[i]) << " " << widths[i] << endl;
+
 		}
+		cout << " end2" << endl;
+
 }
 
 

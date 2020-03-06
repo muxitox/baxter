@@ -7,9 +7,9 @@ from dmp.srv import *
 from dmp.msg import *
 import csv
 import argparse
-import actionlib
 import sys
 from copy import copy
+import math
 
 import baxter_interface
 
@@ -29,14 +29,6 @@ from std_msgs.msg import (
 from baxter_core_msgs.srv import (
     SolvePositionIK,
     SolvePositionIKRequest,
-)
-
-from control_msgs.msg import (
-    FollowJointTrajectoryAction,
-    FollowJointTrajectoryGoal,
-)
-from trajectory_msgs.msg import (
-    JointTrajectoryPoint,
 )
 
 
@@ -105,13 +97,13 @@ class IKSolver:
     # Process the trajectory to feed it to the DMPs
     def cartesian_list_to_joints(self, _points, _use_initial_seed=False):
         _traj = []
+        _times = []
         first_iter = True
 
         # Call the IK Solver for all points
         for _point in _points:
-
-            pose = Pose(position=Point(x=_point[0], y=_point[1],z=_point[2]),
-                        orientation=Quaternion(x=_point[3], y=_point[4], z=_point[5], w=_point[6]))
+            pose = Pose(position=Point(x=_point[1], y=_point[2], z=_point[3]),
+                        orientation=Quaternion(x=_point[4], y=_point[5], z=_point[6], w=_point[7]))
 
             if first_iter:
                 if _use_initial_seed:
@@ -129,10 +121,11 @@ class IKSolver:
             traj_k = _angles_dict.values()
             _joint_names = _angles_dict.keys()
             _traj.append(traj_k)
+            _times.append(_point[0])
 
         self.final_angles = traj_k
         self.final_joint_names = _joint_names
-        return _traj, _joint_names
+        return _traj, _joint_names, _times
 
     '''
     Process one cartesian position and convert it to axial
@@ -162,45 +155,47 @@ class IKSolver:
 # My class for doing de DMPs
 class DynamicMovementPrimitives:
 
-    def __init__(self, _dims, _dt, _K_gain, _D_gain, _num_bases,hi):
+    def __init__(self, _dims, _dt, _K_gain, _D_gain, _num_bases, _hi, _alpha):
         self.dims = _dims
         self.dt = _dt
         self.K_gain = _K_gain
         self.D_gain = _D_gain
         self.num_bases = _num_bases
+        self.hi = _hi
+        self.alpha = _alpha
 
-    def fit(self,  _trajectory):
+    def fit(self, _trajectory):
         self.trajectory = _trajectory
 
         self.resp = self.makeLFDRequest(self.dims, self.trajectory, self.dt, self.K_gain,
-                                        self.D_gain, self.num_bases)
+                                        self.D_gain, self.num_bases, self.hi, self.alpha)
 
         self.makeSetActiveRequest(self.resp.dmp_list)
 
         return self.resp
 
     # Learn a DMP from demonstration data
-    def makeLFDRequest(self, dims, traj, dt, K_gain, D_gain, num_bases, hi):
+    def makeLFDRequest(self, dims, traj, dt, K_gain, D_gain, num_bases, _hi, _alpha):
         demotraj = DMPTraj()
-            
+
         for i in range(len(traj)):
             pt = DMPPoint();
             pt.positions = traj[i]
             demotraj.points.append(pt)
-            demotraj.times.append(dt*i)
-                
-        k_gains = [K_gain]*dims
-        d_gains = [D_gain]*dims
-            
-        print "Starting LfD..."
+            demotraj.times.append(dt * i)
+
+        k_gains = [K_gain] * dims
+        d_gains = [D_gain] * dims
+
+        # print "Starting LfD..."
         rospy.wait_for_service('learn_dmp_from_demo')
         try:
             lfd = rospy.ServiceProxy('learn_dmp_from_demo', LearnDMPFromDemo)
-            resp = lfd(demotraj, k_gains, d_gains, num_bases, hi)
+            resp = lfd(demotraj, k_gains, d_gains, num_bases, _hi, _alpha)
         except rospy.ServiceException, e:
-            print "Service call failed: %s"%e
-        print "LfD trained"
-                
+            print "Service call failed: %s" % e
+        # print "LfD trained"
+
         return resp
 
     # Set a DMP as active for planning
@@ -289,7 +284,7 @@ def read_trajectory_points(_input_file, _fix_orientation):
             _point = [float(i) for i in row]
 
             if _fix_orientation:
-                _point = _point[0:3]
+                _point = _point[0:4]
                 _point.extend(_fixed_orientation)
 
             _points_list.append(_point)
@@ -324,6 +319,11 @@ if __name__ == '__main__':
         '-o', '--output-file', dest='output_file', required=False,
         help='the file name to record to'
     )
+    # Output file
+    required.add_argument(
+        '-oa', '--output-file-angles', dest='output_file_angles', required=False,
+        help='the file name to record to'
+    )
     required.add_argument("-f", action="store_true", dest="fix", help="define if you want to fix the orientation")
     args = parser.parse_args(rospy.myargv()[1:])
 
@@ -350,13 +350,15 @@ if __name__ == '__main__':
     traj = read_trajectory_points(input_file, args.fix)
 
     # Create DMP class with initial parameters
-    dims = 7                # Number of dimensions
-    dt = 0.5                # Time resolution of the plan
-    K = 100                 # List of proportional gains
-    D = 2.0 * np.sqrt(K)    # D_gains
-    num_bases = 100           # Number of basis functions to use
+    dims = 7  # Number of dimensions
+    dt = 0.5  # Time resolution of the plan
+    K = 100  # List of proportional gains
+    D = np.sqrt(K)  # D_gains
+    num_bases = 200  # Number of basis functions to use
+    hi = 0.1
+    alpha = -math.log(0.000005, 10)
 
-    DMPs = DynamicMovementPrimitives(dims, dt, K, D, num_bases)
+    DMPs = DynamicMovementPrimitives(dims, dt, K, D, num_bases, hi, alpha)
 
     # Start inverse kinematics system
     side = "right"
@@ -366,9 +368,26 @@ if __name__ == '__main__':
     if angles:
         print('Converting to angles before DMP...')
         use_initial_seed = True
-        traj, joint_names = kin.cartesian_list_to_joints(traj, use_initial_seed)
+        traj, joint_names, times = kin.cartesian_list_to_joints(traj, use_initial_seed)
 
-    print traj
+    #print traj
+
+    if args.output_file_angles and angles:
+        # Save plan if requested
+        header_list = ['time']
+        header_list.extend(joint_names)
+        header = ','.join(header_list)
+
+        f = open(args.output_file_angles, 'w')
+        f.write(header + '\n')
+
+        for (point, timestamp) in zip(traj, times):
+            line = [timestamp]
+            line.extend(point)
+            line = ','.join(map(str, line))
+            f.write(line + '\n')
+
+        f.close()
 
     # Train the DMPs
     resp = DMPs.fit(traj)
@@ -376,14 +395,16 @@ if __name__ == '__main__':
     # Make the query with the new initial position and goal
 
     # Set initial position
-    x_0_position = [1.057178, -0.372620, 0.455700]
-    x_0_orientation = [0.174272, 0.645359, 0.055630, 0.741651]
+    # x_0_position = [1.057178400000, -0.372620000000, 0.500260180000]
+    x_0_position = [1.057178400000, -0.452620000000, 0.500260180000]
+    x_0_orientation = [0.679558241454, 0.126662326600, 0.713324911380, 0.115433194086]
     x_dot_0 = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     t_0 = 0
 
     # Set goal
-    goal_position = [0.977863, -0.263617, 0.314258]
-    goal_orientation = [0.486297, 0.665848, 0.046493, 0.563915]
+    #goal_position = [1.023647346900,-0.134444726073,0.233769178968]
+    goal_position = [1.023647346900,-0.0084444726073,0.233769178968]
+    goal_orientation = [0.601120337846,0.596000430247,0.465588801541,0.258195457848]
 
     if angles:
 
@@ -391,18 +412,18 @@ if __name__ == '__main__':
         x_0_pose = Pose(position=Point(x=x_0_position[0], y=x_0_position[1], z=x_0_position[2]),
                         orientation=Quaternion(x=x_0_orientation[0], y=x_0_orientation[1], z=x_0_orientation[2],
                                                w=x_0_orientation[3]))
-        x_0, _ = kin.cartesian_to_joints(x_0_pose, 1)
-        x_0 = traj[0]
+        x_0, _ = kin.cartesian_to_joints(x_0_pose, 0)
+        #x_0 = traj[0]
 
         goal_pose = Pose(position=Point(x=goal_position[0], y=goal_position[1], z=goal_position[2]),
                          orientation=Quaternion(x=goal_orientation[0], y=goal_orientation[1], z=goal_orientation[2],
-                                                w=x_0_orientation[3]))
+                                                w=goal_orientation[3]))
 
         goal, _ = kin.cartesian_to_joints(goal_pose, 2)
-        goal = traj[-1]
+        #goal = traj[-1]
 
         # Threshold in each dimension
-        goal_thresh = [0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4]
+        goal_thresh = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
 
     else:
         print('Using cartesian points for DMP...')
@@ -447,22 +468,23 @@ if __name__ == '__main__':
 
     '''
 
-    print('Writing to file... ', args.output_file)
+    if args.output_file:
+        print('Writing to file... ', args.output_file)
 
-    # Save plan if requested
-    header_list = ['time']
-    header_list.extend(joint_names)
-    header = ','.join(header_list)
+        # Save plan if requested
+        header_list = ['time']
+        header_list.extend(joint_names)
+        header = ','.join(header_list)
 
-    f = open(args.output_file, 'w')
-    f.write(header+'\n')
+        f = open(args.output_file, 'w')
+        f.write(header+'\n')
 
-    for (point, timestamp) in zip(plan_list, plan.plan.times):
-        line = [timestamp-dt]
-        line.extend(point)
-        line = ','.join(map(str, line))
-        f.write(line+'\n')
+        for (point, timestamp) in zip(plan_list, plan.plan.times):
+            line = [timestamp-dt]
+            line.extend(point)
+            line = ','.join(map(str, line))
+            f.write(line+'\n')
 
-    f.close()
+        f.close()
 
 

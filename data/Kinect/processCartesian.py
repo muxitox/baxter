@@ -3,6 +3,7 @@
 import csv
 import numpy as np
 import math
+from scipy.ndimage.filters import gaussian_filter1d
 
 
 def main():
@@ -10,7 +11,7 @@ def main():
     first_iter = True
 
     input_file = 'Pre/23-02-2020-18-2-30-NEW_MANOALTA_BUENO.csv'
-    output_file = 'Post/NEWMANOALTA_CHANGEORDER.csv'
+    output_file = 'Post/NEWMANOALTA_MODIFY_YZ.csv'
 
 
     # Period to create groups of vectors to process the records
@@ -30,6 +31,7 @@ def main():
         for row in cartesian_reader:
             # Process the line, convert to float
             line = [float(i) for i in row]
+            '''
             # Offsets
             line[1] += 0.6
             line[4] += 0.6
@@ -37,6 +39,7 @@ def main():
             line[2] -= 0.05
             line[5] -= 0.05
             line[8] -= 0.05
+            '''
 
             # Create the vectors
             # [position, vectorHW, vector WT]
@@ -58,7 +61,7 @@ def main():
                 continue
 
             # Append to create a new vector
-            record = line[1:4] + list(wh_vector) + list(wt_vector)
+            record = [time] + line[1:4] + list(wh_vector) + list(wt_vector)
 
             if time < period+time_processed:
                 pose_list.append(record)
@@ -73,13 +76,13 @@ def main():
     median_list = []
     for pose_list in pose_matrix:
         pose_array = np.array(pose_list)
-        #median = pose_list[0]
+        # median = pose_list[0]
         median = np.median(pose_array, 0)
 
         # Create the vectors for defining hand orientation as [n o a] notation
-        wh_vector = median[3:6]
+        wh_vector = median[4:7]
         wh_norm = np.linalg.norm(wh_vector)
-        wt_vector = median[6:9]
+        wt_vector = median[7:10]
         # wt_norm = np.linalg.norm(wt_vector)
 
         # Vector a, in direction of the hand
@@ -97,19 +100,28 @@ def main():
         # Make sure it is unitary
         o = np.divide(o, np.linalg.norm(o))
 
-        print n, o, a
         # Calculate the quaternion from the matrix, according to Robotics Book
         w = math.sqrt(n[0]+o[1]+a[2]+1)/2
         x = math.sqrt(n[0]-o[1]-a[2]+1)/2
         y = math.sqrt(-n[0]+o[1]-a[2]+1)/2
         z = math.sqrt(-n[0]-o[1]+a[2]+1)/2
 
-        final_pose = list(median[0:3])
+        median[1] += 0.6
+        # median[2] -= 0.05
+        median[2] = (median[2]*1.8)+0.20
+        median[3] = (median[3]*1.8)-0.32
+
+        final_pose = [pose_list[0][0]] + list(median[1:4])
         final_pose.extend([x, y, z, w])
         # Append everything
         median_list.append(final_pose)
 
     output_array = np.array(median_list)
+
+    output_array[:, 1] = gaussian_filter1d(output_array[:, 1], 2)
+    output_array[:, 2] = gaussian_filter1d(output_array[:, 2], 2)
+    output_array[:, 3] = gaussian_filter1d(output_array[:, 3], 2)
+
     np.savetxt(output_file, output_array, fmt='%.12f', delimiter=",")
 
     print('#### Finished processing file in ', output_file, '...')
