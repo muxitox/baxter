@@ -42,14 +42,23 @@ class IKSolver:
         ns = "ExternalTools/" + _limb + "/PositionKinematicsNode/IKService"
         self._iksvc = rospy.ServiceProxy(ns, SolvePositionIK)
         rospy.wait_for_service(ns, 5.0)
+
+        # Seeds for mover liquido
+        '''
         self.seed_list = [[0.09357282806101024, 1.6662866308405306, 0.6224127046845066, -1.1846166634445108,
                            -0.13614079492483047, -0.438335010138257, 0.11888351106111957],
                           [0.3390097541226764, 1.4733885467639398, 0.16988837225830958, -1.3598739684604193,
                            -1.3675438723998463, -0.2703641138648042, 1.2440584189750705],
                           [0.2592427531526349, 1.3123205640359714, 0.3796602450016399, -1.2950632801722606,
                            -1.6988837225830957, -0.17487380981893716, 1.6072283705069423]]
+        '''
         self.joint_names = ['right_e0', 'right_e1', 'right_s0', 'right_s1', 'right_w0', 'right_w1', 'right_w2']
 
+        # Joint seeds for obstacle
+        self.seed_list = [[-0.48358744338087667, 1.196888509747594, 0.9687088675496388, -0.22587867101612719,
+                           -0.9246069198979331, -0.2964417872588562, 1.20992734644462],
+                          [-0.5855971657752567, 1.0572962580500214, 1.1600729708383442, -0.11965050145506227,
+                           -0.9782962474739226, -0.2174417766827574, 1.4434759214001744]]
 
     def ik_request(self, pose, seed_list=None, _joint_names=None):
         hdr = Header(stamp=rospy.Time.now(), frame_id='base')
@@ -102,8 +111,12 @@ class IKSolver:
 
         # Call the IK Solver for all points
         for _point in _points:
+            print('blablablaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
+
             pose = Pose(position=Point(x=_point[1], y=_point[2], z=_point[3]),
                         orientation=Quaternion(x=_point[4], y=_point[5], z=_point[6], w=_point[7]))
+
+            print pose
 
             if first_iter:
                 if _use_initial_seed:
@@ -394,19 +407,36 @@ if __name__ == '__main__':
     # Train the DMPs
     resp = DMPs.fit(traj)
 
+    '''
+    POSITIONS FOR MANOARRIBA
     # Make the query with the new initial position and goal
 
     # Set initial position
     # x_0_position = [1.057178400000, -0.372620000000, 0.500260180000]
-    x_0_position = [1.057178400000, -0.452620000000, 0.500260180000]
+    x_0_position = [1.057178400000, -0.502620000000, 0.600260180000]
     x_0_orientation = [0.679558241454, 0.126662326600, 0.713324911380, 0.115433194086]
     x_dot_0 = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     t_0 = 0
 
     # Set goal
     #goal_position = [1.023647346900,-0.134444726073,0.233769178968]
-    goal_position = [1.023647346900,-0.0084444726073,0.233769178968]
+    goal_position = [1.023647346900,-0.05,0.3033769178968]
     goal_orientation = [0.601120337846,0.596000430247,0.465588801541,0.258195457848]
+    '''
+
+    # Make the query with the new initial position and goal
+
+    # Set initial position
+    # x_0_position = [1.057178400000, -0.372620000000, 0.500260180000]
+    x_0_position = [1.003920800704,-0.350664978056,-0.125779734280]
+    x_0_orientation = [0.729775602066,0.113748418867,0.673919631747,0.017921991560]
+    x_dot_0 = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    t_0 = 0
+
+    # Set goal
+    # goal_position = [1.023647346900,-0.134444726073,0.233769178968]
+    goal_position = [1.012717105233,-0.049454210672,-0.207570838697]
+    goal_orientation = [0.745618981544,0.275916521855,0.597071992685,0.106899218332]
 
     if angles:
 
@@ -425,7 +455,9 @@ if __name__ == '__main__':
         goal = traj[-1]
 
         # Threshold in each dimension
+
         goal_thresh = [0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4]
+
 
     else:
         print('Using cartesian points for DMP...')
