@@ -13,7 +13,7 @@ def main():
     input_file = 'Pre/23-02-2020-18-2-30-NEW_MANOALTA_BUENO.csv'
     output_file = 'Post/NEWMANOALTA_MODIFY_YZ.csv'
 
-    input_file = 'Pre/23-02-2020-18-15-18-NEW_OBSTACULOBAJO.csv'
+    input_file = 'Pre/23-02-2020-18-11-37-NEW_OBSTACULOBAJO.csv'
     output_file = 'Post/OBSTACULOBAJO.csv'
 
     # Period to create groups of vectors to process the records
@@ -114,9 +114,9 @@ def main():
         median[3] = (median[3]*1.8)-0.32
         '''
 
-        median[1] += 0.71
-        median[2] = (median[2]) - 0.06
-        median[3] = (median[3]) - 0.41
+        median[1] += 0.64
+        median[2] = (median[2]*1.8)
+        median[3] = (median[3]*1.8) - 0.45
 
 
         final_pose = [pose_list[0][0]] + list(median[1:4])

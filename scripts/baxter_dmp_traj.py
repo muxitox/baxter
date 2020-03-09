@@ -55,10 +55,10 @@ class IKSolver:
         self.joint_names = ['right_e0', 'right_e1', 'right_s0', 'right_s1', 'right_w0', 'right_w1', 'right_w2']
 
         # Joint seeds for obstacle
-        self.seed_list = [[-0.48358744338087667, 1.196888509747594, 0.9687088675496388, -0.22587867101612719,
-                           -0.9246069198979331, -0.2964417872588562, 1.20992734644462],
-                          [-0.5855971657752567, 1.0572962580500214, 1.1600729708383442, -0.11965050145506227,
-                           -0.9782962474739226, -0.2174417766827574, 1.4434759214001744]]
+        self.seed_list = [[-0.49931074645670215, 1.9239954032052802, 0.795369038518587, -0.48857288094150425, -0.854043803655204, -0.8107088463974411, -2.3726847836617635],
+                          [-0.21283983431910117, 1.4795244699154815, 0.8770535154734853, -0.09127185687918211, 0.03298058693953639, -1.236005019838672, -2.9594324350279346],
+                          [-0.1679708962734528, 1.3077186216723151, 0.6220292094875353, 0.07669903939427068, -0.26959712347086146, -1.4112623248545806, -2.8823499004366924],
+			  [-0.16643691548556738, 1.087208883413787, 0.9242234247009617, 0.19136410328870537, 0.2044029399857314, -1.2068593848688494, -3.0495538063162027]]
 
     def ik_request(self, pose, seed_list=None, _joint_names=None):
         hdr = Header(stamp=rospy.Time.now(), frame_id='base')
@@ -111,12 +111,10 @@ class IKSolver:
 
         # Call the IK Solver for all points
         for _point in _points:
-            print('blablablaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
 
             pose = Pose(position=Point(x=_point[1], y=_point[2], z=_point[3]),
                         orientation=Quaternion(x=_point[4], y=_point[5], z=_point[6], w=_point[7]))
 
-            print pose
 
             if first_iter:
                 if _use_initial_seed:
@@ -135,7 +133,6 @@ class IKSolver:
             _joint_names = _angles_dict.keys()
             _traj.append(traj_k)
             _times.append(_point[0])
-
         self.final_angles = traj_k
         self.final_joint_names = _joint_names
         return _traj, _joint_names, _times
@@ -430,6 +427,10 @@ if __name__ == '__main__':
     # x_0_position = [1.057178400000, -0.372620000000, 0.500260180000]
     x_0_position = [1.003920800704,-0.350664978056,-0.125779734280]
     x_0_orientation = [0.729775602066,0.113748418867,0.673919631747,0.017921991560]
+
+
+    x_0_position = [1.010934968422,-0.638987617363,0.118269753889]
+    x_0_orientation = [0.811827847855,0.241297833201,0.531254858418,0.021890101570]
     x_dot_0 = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     t_0 = 0
 
@@ -438,6 +439,9 @@ if __name__ == '__main__':
     goal_position = [1.012717105233,-0.049454210672,-0.207570838697]
     goal_orientation = [0.745618981544,0.275916521855,0.597071992685,0.106899218332]
 
+    goal_position = [0.995756006189,-0.05,-0.081835866106]
+    goal_orientation = [0.790470908830,0.335521723000,0.501183212652,0.106753468534]
+
     if angles:
 
         # Call the IK Solver for initial and final positions
@@ -445,18 +449,18 @@ if __name__ == '__main__':
                         orientation=Quaternion(x=x_0_orientation[0], y=x_0_orientation[1], z=x_0_orientation[2],
                                                w=x_0_orientation[3]))
         x_0, _ = kin.cartesian_to_joints(x_0_pose, 0)
-        x_0 = traj[0]
+        #x_0 = traj[0]
 
         goal_pose = Pose(position=Point(x=goal_position[0], y=goal_position[1], z=goal_position[2]),
                          orientation=Quaternion(x=goal_orientation[0], y=goal_orientation[1], z=goal_orientation[2],
                                                 w=goal_orientation[3]))
 
         goal, _ = kin.cartesian_to_joints(goal_pose, 2)
-        goal = traj[-1]
+        #goal = traj[-1]
 
         # Threshold in each dimension
 
-        goal_thresh = [0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4]
+        goal_thresh = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
 
 
     else:
