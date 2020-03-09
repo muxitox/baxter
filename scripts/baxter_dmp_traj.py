@@ -338,6 +338,7 @@ if __name__ == '__main__':
     init_state = rs.state().enabled
     rs.enable()
 
+    '''
     # Move left arm to a position where it does not trouble
     limb = baxter_interface.Limb("left")
     joint_names = ['left_e0', 'left_e1', 'left_s0', 'left_s1', 'left_w0', 'left_w1', 'left_w2']
@@ -345,6 +346,7 @@ if __name__ == '__main__':
                 0.11313108310654926, 0.08858739050038264]
     angles_dict = dict(zip(joint_names, position))
     limb.move_to_joint_positions(angles_dict)
+    '''
 
     # Read the trajectory
     traj = read_trajectory_points(input_file, args.fix)
@@ -413,17 +415,17 @@ if __name__ == '__main__':
                         orientation=Quaternion(x=x_0_orientation[0], y=x_0_orientation[1], z=x_0_orientation[2],
                                                w=x_0_orientation[3]))
         x_0, _ = kin.cartesian_to_joints(x_0_pose, 0)
-        #x_0 = traj[0]
+        x_0 = traj[0]
 
         goal_pose = Pose(position=Point(x=goal_position[0], y=goal_position[1], z=goal_position[2]),
                          orientation=Quaternion(x=goal_orientation[0], y=goal_orientation[1], z=goal_orientation[2],
                                                 w=goal_orientation[3]))
 
         goal, _ = kin.cartesian_to_joints(goal_pose, 2)
-        #goal = traj[-1]
+        goal = traj[-1]
 
         # Threshold in each dimension
-        goal_thresh = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
+        goal_thresh = [0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4]
 
     else:
         print('Using cartesian points for DMP...')

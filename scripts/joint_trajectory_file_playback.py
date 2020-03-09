@@ -316,8 +316,8 @@ Related examples:
      # Move left arm to a position where it does not trouble
     left_limb = baxter_interface.Limb("left")
     joint_names = ['left_e0', 'left_e1', 'left_s0', 'left_s1', 'left_w0', 'left_w1', 'left_w2']
-    position = [-0.005368932757598948, 2.6173547193294873, 2.3531265286162246, -1.6965827514012677, -2.1456556270547225,
-                0.11313108310654926, 0.08858739050038264]
+    position = [-1.2256506495204456, 1.604927399325114, 1.170810836353542, -0.9882671225951778, 
+                0.5288398766234964, 1.2724370635509508, 0.088970885697354]
     angles_dict = dict(zip(joint_names, position))
     left_limb.move_to_joint_positions(angles_dict)
 
