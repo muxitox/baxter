@@ -20,7 +20,7 @@ def main():
     output_file = 'Post/OBSTACULOBAJO.csv'
     '''
 
-    input_file = 'Pre/23-02-2020-18-15-18-NEW_OBSTACULOBAJO.csv'
+    input_file = 'Pre/23-02-2020-18-2-30-NEW_MANOALTA_BUENO.csv'
     output_file = 'Post/PRUEBASREPORT.csv'
 
 
@@ -233,39 +233,32 @@ def main():
 
     plt.figure(3)
     plt.subplot(4, 2, 1)
-    plt.plot(output_array[:, 0], output_array[:, 1])
-    plt.xlabel('Time [s]')
-    plt.title('Position X')
+    plt.plot(output_array[:, 1])
+    plt.title('X Position')
 
     plt.subplot(4, 2, 3)
-    plt.plot(output_array[:, 0], output_array[:, 2])
-    plt.xlabel('Time [s]')
-    plt.title('Position Y')
+    plt.plot(output_array[:, 2])
+    plt.title('Y Position')
 
     plt.subplot(4, 2, 5)
-    plt.plot(output_array[:, 0], output_array[:, 3])
-    plt.xlabel('Time [s]')
-    plt.title('Position Z')
+    plt.plot(output_array[:, 3])
+    plt.title('Z Position')
 
     plt.subplot(4, 2, 2)
-    plt.plot(output_array[:, 0], output_array[:, 4])
-    plt.xlabel('Time [s]')
-    plt.title('Orientation X')
+    plt.plot(output_array[:, 4])
+    plt.title('X Orientation')
 
     plt.subplot(4, 2, 4)
-    plt.plot(output_array[:, 0], output_array[:, 5])
-    plt.xlabel('Time [s]')
-    plt.title('Orientation Y')
+    plt.plot(output_array[:, 5])
+    plt.title('Y Orientation')
 
     plt.subplot(4, 2, 6)
-    plt.plot(output_array[:, 0], output_array[:, 6])
-    plt.xlabel('Time [s]')
-    plt.title('Orientation Z')
+    plt.plot(output_array[:, 6])
+    plt.title('Z Orientation')
 
     plt.subplot(4, 2, 8)
-    plt.plot(output_array[:, 0], output_array[:, 7])
-    plt.xlabel('Time [s]')
-    plt.title('Orientation W')
+    plt.plot(output_array[:, 6])
+    plt.title('W Orientation')
 
     plt.show()
 
