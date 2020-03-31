@@ -196,6 +196,7 @@ class Trajectory(object):
                 # arm since recording
                 #cur_cmd = [self._l_arm.joint_angle(jnt) for jnt in self._l_goal.trajectory.joint_names]
                 #self._add_point(cur_cmd, 'left', 0.0)
+
                 cur_cmd = [self._r_arm.joint_angle(jnt) for jnt in self._r_goal.trajectory.joint_names]
                 self._add_point(cur_cmd, 'right', 0.0)
                 start_offset = find_start_offset(cmd)

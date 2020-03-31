@@ -21,8 +21,8 @@ def main():
     output_file = 'Post/OBSTACULOBAJO.csv'
     '''
 
-    input_file = 'Pre/23-02-2020-18-15-18-NEW_OBSTACULOBAJO.csv'
-    output_file = 'Post/PRUEBASREPORT.csv'
+    input_file = 'Pre/23-02-2020-18-2-30-NEW_MANOALTA_BUENO.csv'
+    output_file = 'Post/pruebas.csv'
 
 
     # Period to create groups of vectors to process the records
@@ -113,10 +113,15 @@ def main():
     zt_diff_list = []
 
     median_list = []
+    std_list = []
     for pose_list in pose_matrix:
         pose_array = np.array(pose_list)
         # median = pose_list[0]
         median = np.median(pose_array, 0)
+
+        std = np.std(pose_array[:,1:], 0)
+
+        std_list.append(std)
 
         print(pose_array[0,1:])
 
@@ -169,16 +174,15 @@ def main():
         y = math.sqrt(-n[0]+o[1]-a[2]+1)/2
         z = math.sqrt(-n[0]-o[1]+a[2]+1)/2
 
-        '''
         median[1] += 0.6
         median[2] = (median[2]*1.8)+0.20
         median[3] = (median[3]*1.8)-0.32
-        '''
 
+        '''
         median[1] += 0.64
         median[2] = (median[2]*1.8)
         median[3] = (median[3]*1.8) - 0.45
-
+        '''
 
         final_pose = [pose_list[0][0]] + list(median[1:4])
         final_pose.extend([x, y, z, w])
@@ -189,83 +193,134 @@ def main():
     plt.subplot(3, 3, 1)
     plt.hist(xw_diff_list, 5)
     plt.ylabel('Frequency')
-    plt.title('Wrist X')
+    plt.title('(a) Wrist X')
 
     plt.subplot(3, 3, 2)
     plt.hist(yw_diff_list, 5)
-    plt.title('Wrist Y')
+    plt.title('(b) Wrist Y')
 
     plt.subplot(3, 3, 3)
     plt.hist(zw_diff_list, 5)
-    plt.title('Wrist Z')
+    plt.title('(c) Wrist Z')
 
     plt.subplot(3, 3, 4)
     plt.hist(xh_diff_list, 5)
     plt.ylabel('Frequency')
-    plt.title('Hand X')
+    plt.title('(d) Hand X')
 
     plt.subplot(3, 3, 5)
     plt.hist(yh_diff_list, 5)
-    plt.title('Hand Y')
+    plt.title('(e) Hand Y')
 
     plt.subplot(3, 3, 6)
     plt.hist(zh_diff_list, 5)
-    plt.title('Hand Z')
+    plt.title('(f) Hand Z')
 
     plt.subplot(3, 3, 7)
     plt.hist(xt_diff_list, 5)
     plt.ylabel('Frequency')
-    plt.title('Thumb X')
+    plt.title('(g) Thumb X')
 
     plt.subplot(3, 3, 8)
     plt.hist(yt_diff_list, 5)
-    plt.title('Thumb Y')
+    plt.title('(h) Thumb Y')
 
     plt.subplot(3, 3, 9)
     plt.hist(zt_diff_list, 5)
-    plt.title('Thumb Z')
+    plt.title('(i) Thumb Z')
 
-    plt.suptitle('Max Min Difference per Every Coordinate')
+    plt.suptitle('Max Min Difference every 0.5 s')
 
     plt.show()
 
-    output_array = np.array(median_list)
+    std_array = np.array(std_list)
+
+    print(std_array.shape)
 
     plt.figure(3)
+    plt.subplot(3, 3, 1)
+    plt.hist(std_array[:,0], 5)
+    plt.ylabel('Frequency')
+    plt.title('(a) Wrist X')
+
+    plt.subplot(3, 3, 2)
+    plt.hist(std_array[:,1], 5)
+    plt.title('(b) Wrist Y')
+
+    plt.subplot(3, 3, 3)
+    plt.hist(std_array[:,1], 5)
+    plt.title('(c) Wrist Z')
+
+    plt.subplot(3, 3, 4)
+    plt.hist(std_array[:,3], 5)
+    plt.ylabel('Frequency')
+    plt.title('(d) Hand X')
+
+    plt.subplot(3, 3, 5)
+    plt.hist(std_array[:,4], 5)
+    plt.title('(e) Hand Y')
+
+    plt.subplot(3, 3, 6)
+    plt.hist(std_array[:,5], 5)
+    plt.title('(f) Hand Z')
+
+    plt.subplot(3, 3, 7)
+    plt.hist(std_array[:,6], 5)
+    plt.ylabel('Frequency')
+    plt.title('(g) Thumb X')
+
+    plt.subplot(3, 3, 8)
+    plt.hist(std_array[:,7], 5)
+    plt.title('(h) Thumb Y')
+
+    plt.subplot(3, 3, 9)
+    plt.hist(std_array[:,8], 5)
+    plt.title('(i) Thumb Z')
+
+    plt.suptitle('Standard Deviation every 0.5 s')
+
+    plt.show()
+
+
+    output_array = np.array(median_list)
+
+    plt.figure(4)
     plt.subplot(4, 2, 1)
     plt.plot(output_array[:, 0], output_array[:, 1])
     plt.xlabel('Time [s]')
-    plt.title('Position X')
+    plt.title('(a) Position X')
 
     plt.subplot(4, 2, 3)
     plt.plot(output_array[:, 0], output_array[:, 2])
     plt.xlabel('Time [s]')
-    plt.title('Position Y')
+    plt.title('(b) Position Y')
 
     plt.subplot(4, 2, 5)
     plt.plot(output_array[:, 0], output_array[:, 3])
     plt.xlabel('Time [s]')
-    plt.title('Position Z')
+    plt.title('(c) Position Z')
 
     plt.subplot(4, 2, 2)
     plt.plot(output_array[:, 0], output_array[:, 4])
     plt.xlabel('Time [s]')
-    plt.title('Orientation X')
+    plt.title('(d) Orientation X')
 
     plt.subplot(4, 2, 4)
     plt.plot(output_array[:, 0], output_array[:, 5])
     plt.xlabel('Time [s]')
-    plt.title('Orientation Y')
+    plt.title('(d) Orientation Y')
 
     plt.subplot(4, 2, 6)
     plt.plot(output_array[:, 0], output_array[:, 6])
     plt.xlabel('Time [s]')
-    plt.title('Orientation Z')
+    plt.title('(f) Orientation Z')
 
     plt.subplot(4, 2, 8)
     plt.plot(output_array[:, 0], output_array[:, 7])
     plt.xlabel('Time [s]')
-    plt.title('Orientation W')
+    plt.title('(g) Orientation W')
+
+    plt.suptitle('Endpoint Pose')
 
     plt.show()
 

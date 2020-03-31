@@ -44,21 +44,24 @@ class IKSolver:
         rospy.wait_for_service(ns, 5.0)
 
         # Seeds for mover liquido
-        '''
+
         self.seed_list = [[0.09357282806101024, 1.6662866308405306, 0.6224127046845066, -1.1846166634445108,
                            -0.13614079492483047, -0.438335010138257, 0.11888351106111957],
                           [0.3390097541226764, 1.4733885467639398, 0.16988837225830958, -1.3598739684604193,
                            -1.3675438723998463, -0.2703641138648042, 1.2440584189750705],
                           [0.2592427531526349, 1.3123205640359714, 0.3796602450016399, -1.2950632801722606,
                            -1.6988837225830957, -0.17487380981893716, 1.6072283705069423]]
-        '''
+
+
         self.joint_names = ['right_e0', 'right_e1', 'right_s0', 'right_s1', 'right_w0', 'right_w1', 'right_w2']
 
+        '''
         # Joint seeds for obstacle
         self.seed_list = [[-0.49931074645670215, 1.9239954032052802, 0.795369038518587, -0.48857288094150425, -0.854043803655204, -0.8107088463974411, -2.3726847836617635],
                           [-0.21283983431910117, 1.4795244699154815, 0.8770535154734853, -0.09127185687918211, 0.03298058693953639, -1.236005019838672, -2.9594324350279346],
                           [-0.1679708962734528, 1.3077186216723151, 0.6220292094875353, 0.07669903939427068, -0.26959712347086146, -1.4112623248545806, -2.8823499004366924],
-			  [-0.16643691548556738, 1.087208883413787, 0.9242234247009617, 0.19136410328870537, 0.2044029399857314, -1.2068593848688494, -3.0495538063162027]]
+                          [-0.16643691548556738, 1.087208883413787, 0.9242234247009617, 0.19136410328870537, 0.2044029399857314, -1.2068593848688494, -3.0495538063162027]]
+        '''
 
     def ik_request(self, pose, seed_list=None, _joint_names=None):
         hdr = Header(stamp=rospy.Time.now(), frame_id='base')
@@ -348,15 +351,6 @@ if __name__ == '__main__':
     init_state = rs.state().enabled
     rs.enable()
 
-    '''
-    # Move left arm to a position where it does not trouble
-    limb = baxter_interface.Limb("left")
-    joint_names = ['left_e0', 'left_e1', 'left_s0', 'left_s1', 'left_w0', 'left_w1', 'left_w2']
-    position = [-0.005368932757598948, 2.6173547193294873, 2.3531265286162246, -1.6965827514012677, -2.1456556270547225,
-                0.11313108310654926, 0.08858739050038264]
-    angles_dict = dict(zip(joint_names, position))
-    limb.move_to_joint_positions(angles_dict)
-    '''
 
     # Read the trajectory
     traj = read_trajectory_points(input_file, args.fix)
@@ -366,9 +360,10 @@ if __name__ == '__main__':
     dt = 0.5  # Time resolution of the plan
     K = 100  # List of proportional gains
     D = np.sqrt(K)  # D_gains
-    num_bases = 200  # Number of basis functions to use
-    hi = 0.1
+    num_bases = 13  # Number of basis functions to use
+    hi = 10
     alpha = -math.log(0.000005, 10)
+    alpha = 6.907755278982137
 
     DMPs = DynamicMovementPrimitives(dims, dt, K, D, num_bases, hi, alpha)
 
@@ -404,43 +399,38 @@ if __name__ == '__main__':
     # Train the DMPs
     resp = DMPs.fit(traj)
 
-    '''
-    POSITIONS FOR MANOARRIBA
+    print(joint_names)
+
+    # POSITIONS FOR MANOARRIBA
     # Make the query with the new initial position and goal
 
     # Set initial position
     # x_0_position = [1.057178400000, -0.372620000000, 0.500260180000]
-    x_0_position = [1.057178400000, -0.502620000000, 0.600260180000]
-    x_0_orientation = [0.679558241454, 0.126662326600, 0.713324911380, 0.115433194086]
+    x_0_position = [1.056356046628,-0.50,0.60]
+    x_0_orientation = [0.679558241454,0.126662326600,0.713324911380,0.115433194086]
     x_dot_0 = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     t_0 = 0
 
     # Set goal
     #goal_position = [1.023647346900,-0.134444726073,0.233769178968]
-    goal_position = [1.023647346900,-0.05,0.3033769178968]
+    goal_position = [1.023647346900,0.10,0.16]
     goal_orientation = [0.601120337846,0.596000430247,0.465588801541,0.258195457848]
-    '''
+    goal_orientation = [ 0.347545234546, 0.721356382885, 0.352070247993, 0.484668772764 ]
 
+
+
+
+    '''
     # Make the query with the new initial position and goal
 
-    # Set initial position
-    # x_0_position = [1.057178400000, -0.372620000000, 0.500260180000]
-    x_0_position = [1.003920800704,-0.350664978056,-0.125779734280]
-    x_0_orientation = [0.729775602066,0.113748418867,0.673919631747,0.017921991560]
-
-
-    x_0_position = [1.010934968422,-0.638987617363,0.118269753889]
-    x_0_orientation = [0.811827847855,0.241297833201,0.531254858418,0.021890101570]
+    x_0_position = [1.056356046628,-0.350334254965,0.498158707178]
+    x_0_orientation = [0.679558241454,0.126662326600,0.713324911380,0.115433194086]
     x_dot_0 = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     t_0 = 0
 
-    # Set goal
-    # goal_position = [1.023647346900,-0.134444726073,0.233769178968]
-    goal_position = [1.012717105233,-0.049454210672,-0.207570838697]
-    goal_orientation = [0.745618981544,0.275916521855,0.597071992685,0.106899218332]
-
-    goal_position = [0.995756006189,-0.05,-0.081835866106]
+    goal_position = [0.995756006189,0.05,0.05]
     goal_orientation = [0.790470908830,0.335521723000,0.501183212652,0.106753468534]
+    '''
 
     if angles:
 
@@ -456,11 +446,12 @@ if __name__ == '__main__':
                                                 w=goal_orientation[3]))
 
         goal, _ = kin.cartesian_to_joints(goal_pose, 2)
+
         #goal = traj[-1]
 
         # Threshold in each dimension
 
-        goal_thresh = [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
+        goal_thresh = [0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.3]
 
 
     else:
@@ -490,6 +481,17 @@ if __name__ == '__main__':
     # If the plan has been learnt in cartesian, then convert to angles
     if not angles:
         plan_list, joint_names = kin.cartesian_list_to_joints(plan_list, True)
+
+    plan_list_short = plan_list[:len(traj)]
+
+    error = 0
+    for source, target in zip(traj, plan_list_short):
+        source = np.array(source)
+        target = np.array(target)
+
+        error += np.linalg.norm(source - target)
+
+    print('MSE', error)
 
     '''
     ##

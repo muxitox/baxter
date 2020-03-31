@@ -15,7 +15,7 @@ def main():
     input_file = 'Pre/23-02-2020-18-2-30-NEW_MANOALTA_BUENO.csv'
     '''
     '''
-    input_file = 'Pre/23-02-2020-18-15-18-NEW_OBSTACULOBAJO.csv'
+    input_file = 'Pre/23-02-2020-18-11-37-NEW_OBSTACULOBAJO.csv'
     '''
 
     input_file = 'Pre/23-02-2020-18-2-30-NEW_MANOALTA_BUENO.csv'
@@ -34,47 +34,49 @@ def main():
     plt.subplot(3,3,1)
     plt.plot(data[:, 0], data[:, 1])
     plt.xlabel('Time [s]')
-    plt.title('Wrist X')
+    plt.title('(a) Wrist X')
 
     plt.subplot(3, 3, 2)
     plt.plot(data[:, 0], data[:, 2])
     plt.xlabel('Time [s]')
-    plt.title('Wrist Y')
+    plt.title('(b) Wrist Y')
 
     plt.subplot(3, 3, 3)
     plt.plot(data[:, 0], data[:, 3])
     plt.xlabel('Time [s]')
-    plt.title('Wrist Z')
+    plt.title('(c) Wrist Z')
 
     plt.subplot(3, 3, 4)
     plt.plot(data[:, 0], data[:, 4])
     plt.xlabel('Time [s]')
-    plt.title('Hand X')
+    plt.title('(d) Hand X')
 
     plt.subplot(3, 3, 5)
     plt.plot(data[:, 0], data[:, 5])
     plt.xlabel('Time [s]')
-    plt.title('Hand Y')
+    plt.title('(e) Hand Y')
 
     plt.subplot(3, 3, 6)
     plt.plot(data[:, 0], data[:, 6])
     plt.xlabel('Time [s]')
-    plt.title('Hand Z')
+    plt.title('(f) Hand Z')
 
     plt.subplot(3, 3, 7)
     plt.plot(data[:, 0], data[:, 7])
     plt.xlabel('Time [s]')
-    plt.title('Thumb X')
+    plt.title('(g) Thumb X')
 
     plt.subplot(3, 3, 8)
     plt.plot(data[:, 0], data[:, 8])
     plt.xlabel('Time [s]')
-    plt.title('Thumb Y')
+    plt.title('(h) Thumb Y')
 
     plt.subplot(3, 3, 9)
     plt.plot(data[:, 0], data[:, 9])
     plt.xlabel('Time [s]')
-    plt.title('Thumb Z')
+    plt.title('(i) Thumb Z')
+
+    plt.suptitle('Joint Positions [m]')
 
     plt.show()
 

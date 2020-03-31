@@ -95,7 +95,7 @@ void learnFromDemo(const DMPTraj &demo,
 	double *f_domain = new double[n_pts];
 	double *f_targets = new double[n_pts];
 	FunctionApprox *f_approx = new LinearApprox();
-	//FunctionApprox *f_approx = new RadialApprox(num_bases, hi, alpha_global);
+	//FunctionApprox *f_approx = new RadialApprox(num_bases, hi, alpha);
 
 	//Compute the DMP weights for each DOF separately
 	for(int d=0; d<dims; d++){
@@ -193,7 +193,7 @@ void generatePlan(const vector<DMPData> &dmp_list,
 
 	for(int i=0; i<dims; i++)
 		f[i] = new LinearApprox(dmp_list[i].f_domain, dmp_list[i].f_targets);
-		//f[i] = new RadialApprox(dmp_list[i].weights, hi, alpha_global);
+		//f[i] = new RadialApprox(dmp_list[i].weights, hi, alpha);
 
 	
 	double t = 0;
