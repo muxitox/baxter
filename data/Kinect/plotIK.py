@@ -18,17 +18,19 @@ def main():
     input_file = 'TrajIK/OBSTACULOBAJO.csv'
     '''
 
-    source_file = 'TrajIK/FINAL_OBSTACULOBAJO_0.csv'
+    source_file = 'TrajIK/FINAL_TIRARLIQUIDO.csv'
 
     source_data = np.genfromtxt(source_file, delimiter=',', dtype=float)
 
-    target_file = 'TrajDMP/FINAL_OBSTACULOBAJO_INI_RIGHTUP_END_LEFTUP.csv'
+    target_file = 'TrajDMP/FINAL_TIRARLIQUIDO_INI_END_ORI.csv'
     target_data = np.genfromtxt(target_file, delimiter=',', dtype=float)
 
 
+    len1 = len(source_data[:,0])
+
     plt.style.use('ggplot')
     plt.figure(figsize = (7, 2))
-    plt.plot(source_data[:-1, 0], source_data[:-1, 1], label='Source')
+    plt.plot(source_data[:, 0], source_data[:, 1], label='Source')
     plt.plot(target_data[:, 0], target_data[:, 1], linestyle='dashed', label='Planned')
     plt.autoscale(enable=True, axis='x', tight=True)
     plt.xlabel('Time [s]')
@@ -38,7 +40,7 @@ def main():
     plt.legend()
 
     plt.figure(figsize=(7, 2))
-    plt.plot(source_data[:-1, 0], source_data[:-1, 2], label='Source')
+    plt.plot(source_data[:, 0], source_data[:, 2], label='Source')
     plt.plot(target_data[:, 0], target_data[:, 2], linestyle='dashed', label='Planned')
     plt.autoscale(enable=True, axis='x', tight=True)
     plt.xlabel('Time [s]')
@@ -49,7 +51,7 @@ def main():
 
 
     plt.figure(figsize=(7, 2))
-    plt.plot(source_data[:-1, 0], source_data[:-1, 6], label='Source')
+    plt.plot(source_data[:, 0], source_data[:, 6], label='Source')
     plt.plot(target_data[:, 0], target_data[:, 6], linestyle='dashed', label='Planned')
     plt.autoscale(enable=True, axis='x', tight=True)
     plt.xlabel('Time [s]')
@@ -59,7 +61,7 @@ def main():
     plt.legend()
 
     plt.figure(figsize=(7, 2))
-    plt.plot(source_data[:-1, 0], source_data[:-1, 7], label='Source')
+    plt.plot(source_data[:, 0], source_data[:, 7], label='Source')
     plt.plot(target_data[:, 0], target_data[:, 7], linestyle='dashed', label='Planned')
     plt.autoscale(enable=True, axis='x', tight=True)
     plt.xlabel('Time [s]')
@@ -69,7 +71,7 @@ def main():
     plt.legend()
 
     plt.figure(figsize=(7, 2))
-    plt.plot(source_data[:-1, 0], source_data[:-1, 3], label='Source')
+    plt.plot(source_data[:, 0], source_data[:, 3], label='Source')
     plt.plot(target_data[:, 0], target_data[:, 3], linestyle='dashed', label='Planned')
     plt.autoscale(enable=True, axis='x', tight=True)
     plt.xlabel('Time [s]')
@@ -79,7 +81,7 @@ def main():
     plt.legend()
 
     plt.figure(figsize=(7, 2))
-    plt.plot(source_data[:-1, 0], source_data[:-1, 4], label='Source')
+    plt.plot(source_data[:, 0], source_data[:, 4], label='Source')
     plt.plot(target_data[:, 0], target_data[:, 4], linestyle='dashed', label='Planned')
     plt.autoscale(enable=True, axis='x', tight=True)
     plt.xlabel('Time [s]')
@@ -89,7 +91,7 @@ def main():
     plt.legend()
 
     plt.figure(figsize=(7, 2))
-    plt.plot(source_data[:-1, 0], source_data[:-1, 5], label='Source')
+    plt.plot(source_data[:, 0], source_data[:, 5], label='Source')
     plt.plot(target_data[:, 0], target_data[:, 5], linestyle='dashed', label='Planned')
     plt.autoscale(enable=True, axis='x', tight=True)
     plt.xlabel('Time [s]')

@@ -399,8 +399,6 @@ if __name__ == '__main__':
     # Train the DMPs
     resp = DMPs.fit(traj)
 
-    print(joint_names)
-
     # POSITIONS FOR MANOARRIBA
     # Make the query with the new initial position and goal
 
