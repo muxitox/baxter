@@ -9,3 +9,6 @@ OVERVIEW
 ---------
 
 This package is a general, robot-agnostic implementation of dynamic movement primitives (DMPs).  A good reference on DMPs can be found at: http://www-clmc.usc.edu/publications/P/pastor-ICRA2009.pdf
+ 
+ 
+This package has been modified by Ángel Poc López for developing his master thesis "A Learning from Demonstration Approach for Robot Trajectories through Motion-Sensing Human Demonstrations"
